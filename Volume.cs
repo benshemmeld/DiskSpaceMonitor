@@ -9,7 +9,8 @@ namespace DiskSpaceMonitor
     public class Volume
     {
         public string Name { get; set; }
-        public long WarningThreshold { get; set; }
+        public long BytesRemainingWarningThreshold { get; set; }
 
+        public string Email { get; set; }
     }
 }

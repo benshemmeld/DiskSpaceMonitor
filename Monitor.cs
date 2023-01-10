@@ -1,6 +1,9 @@
-﻿using System.Net.Mail;
+﻿using System.Net;
+using System.Net.Mail;
 using System.Text.Json;
 using Humanizer;
+using Microsoft.Extensions.Configuration;
+using Topshelf;
 
 namespace DiskSpaceMonitor
 {
@@ -8,14 +11,17 @@ namespace DiskSpaceMonitor
     {
         private readonly System.Timers.Timer _timer;
         private readonly double _frequencyMilliseconds = 1000 * 60 * 60; //1 hour
+        private readonly IConfigurationSection _smtpConfig;
 
-        public Monitor()
+        public Monitor(IConfigurationSection smtpConfig)
         {
+            _smtpConfig = smtpConfig;
+
             _timer = new System.Timers.Timer(_frequencyMilliseconds) { AutoReset = true };
             _timer.Elapsed += (sender, eventArgs) =>
             {
                 _timer.Enabled = false;
-                
+
                 Process();
 
                 _timer.Interval = _frequencyMilliseconds;
@@ -25,6 +31,8 @@ namespace DiskSpaceMonitor
 
         public void Start()
         {
+            SendDiskSpaceWarningEmail("bshemmeld@gmail.com", "This is a test");
+            
             LoadConfiguration();
 
             //Start with an interval of just 1 second, so it will process once and then revert to the configured frequency
@@ -48,7 +56,7 @@ namespace DiskSpaceMonitor
                 {
                     Name = @"C:\",
                     BytesRemainingWarningThreshold = 10 * 1024 * 1024, //10MB,
-                    Email = "ben.shemmeld@uhg.com.au"
+                    Email = "email@uhg.com.au"
                 });
 
                 Configuration.RetentionPolicies.Add(new RetentionPolicy
@@ -94,9 +102,13 @@ namespace DiskSpaceMonitor
 
         private void SendDiskSpaceWarningEmail(string email, string message)
         {
-            using (var smtp = new SmtpClient())
+
+            using (var smtp = new SmtpClient(_smtpConfig.GetValue<string>("Server"), _smtpConfig.GetValue<int>("Port"))
             {
-                smtp.Send("ben.shemmeld@uhg.com.au", email, message, message);
+                Credentials = new NetworkCredential(_smtpConfig.GetValue<string>("UserName"), _smtpConfig.GetValue<string>("Password"), _smtpConfig.GetValue<string>("Domain"))
+            })
+            {
+                smtp.Send(_smtpConfig.GetValue<string>("FromAddress"), email, message, message);
             }
         }
     }

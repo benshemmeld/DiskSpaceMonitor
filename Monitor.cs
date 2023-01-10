@@ -31,8 +31,6 @@ namespace DiskSpaceMonitor
 
         public void Start()
         {
-            SendDiskSpaceWarningEmail("bshemmeld@gmail.com", "This is a test");
-            
             LoadConfiguration();
 
             //Start with an interval of just 1 second, so it will process once and then revert to the configured frequency
